@@ -1,0 +1,157 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Cannot cast mixed to string\.$#'
+			identifier: cast.string
+			count: 6
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Casting to array something that''s already array\.$#'
+			identifier: cast.useless
+			count: 1
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Casting to array\<string\> something that''s already array\<string\>\.$#'
+			identifier: cast.useless
+			count: 3
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Casting to int something that''s already int\.$#'
+			identifier: cast.useless
+			count: 1
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Offset ''priority'' on array\{tags\: array\<string\>, priority\: int\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Offset ''tags'' on array\{tags\: array\<string\>, priority\: int\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Parameter \#2 \$dependencies \(array\{tags\: array\<string\>, priority\: int\}\) of method Contributte\\Redis\\Caching\\RedisJournal\:\:write\(\) should be contravariant with parameter \$dependencies \(array\) of method Nette\\Caching\\Storages\\Journal\:\:write\(\)$#'
+			identifier: method.childParameterType
+			count: 1
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between array and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between array\<string\> and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: src/Caching/RedisJournal.php
+
+		-
+			message: '#^Binary operation "\+" between array\{key\: string\} and mixed results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Binary operation "\+" between mixed and int\<1, max\> results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Cannot access offset 0 on mixed\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
+			identifier: empty.notAllowed
+			count: 2
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Do\-while loop condition is always false\.$#'
+			identifier: doWhile.alwaysFalse
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Instanceof between string\|null and Predis\\Response\\Status will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Method Contributte\\Redis\\Caching\\RedisStorage\:\:readMeta\(\) should return array\<mixed\>\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Only booleans are allowed in &&, array\|null given on the left side\.$#'
+			identifier: booleanAnd.leftNotBoolean
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Only booleans are allowed in a negated boolean, string\|null given\.$#'
+			identifier: booleanNot.exprNotBoolean
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Parameter \#1 \$data of method Contributte\\Redis\\Serializer\\Serializer\:\:unserialize\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Parameter \#1 \$json of function json_decode expects string, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Parameter \#1 \$key of static method Contributte\\Redis\\Caching\\RedisStorage\:\:processStoredValue\(\) expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Parameter \#1 \$meta of method Contributte\\Redis\\Caching\\RedisStorage\:\:verify\(\) expects array\<mixed\>, mixed given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Parameter \#1 \$stored of method Contributte\\Redis\\Caching\\RedisStorage\:\:getUnserializedValue\(\) expects array\<mixed\>, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Parameter \#2 \$meta of method Contributte\\Redis\\Serializer\\Serializer\:\:unserialize\(\) expects array\<mixed\>, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Caching/RedisStorage.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: src/Caching/RedisStorage.php
