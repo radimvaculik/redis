@@ -4,8 +4,8 @@ namespace Tests\Cases\Caching;
 
 use Contributte\Redis\Caching\RedisJournal;
 use Contributte\Redis\Caching\RedisStorage;
+use Contributte\Tester\Toolkit;
 use Nette\Caching\Cache;
-use Ninjify\Nunjuck\Toolkit;
 use Predis\Client;
 use Predis\Connection\ConnectionException;
 use stdClass;
@@ -133,6 +133,7 @@ Toolkit::test(function () use ($cache): void {
 // Helper function for journal related tests
 $generateJournalKey = static function (string $key, string $suffix, bool $addStoragePrefix): string {
 	$prefix = $addStoragePrefix ? sprintf('%s:%s', RedisJournal::NS_PREFIX, RedisStorage::NS_PREFIX) : RedisJournal::NS_PREFIX;
+
 	return sprintf('%s:%s:%s', $prefix, $key, $suffix);
 };
 

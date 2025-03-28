@@ -3,8 +3,8 @@
 namespace Tests\Cases\Caching;
 
 use Contributte\Redis\Caching\RedisStorage;
+use Contributte\Tester\Toolkit;
 use Mockery;
-use Ninjify\Nunjuck\Toolkit;
 use Predis\Client;
 use Predis\Command\Command;
 use Predis\Connection\ConnectionInterface;
@@ -21,15 +21,18 @@ Toolkit::test(function (): void {
 			switch ($command->getId()) {
 				case 'SET':
 					$storage->{$command->getArguments()[0]} = $command->getArguments()[1];
+
 					return null;
 				case 'DEL':
 					$storage->{$command->getArguments()[0]} = null;
+
 					return null;
 				case 'MGET':
 					$result = [];
 					foreach ($command->getArguments() as $index => $argument) {
 						$result[$index] = $storage->{$argument} ?? null;
 					}
+
 					return $result;
 				default:
 					return $storage->{$command->getArguments()[0]} ?? null;

@@ -7,7 +7,7 @@
 namespace Tests\Cases\Redis\Serializer;
 
 use Contributte\Redis\Serializer\SnappySerializer;
-use Ninjify\Nunjuck\Toolkit;
+use Contributte\Tester\Toolkit;
 use Tester\Assert;
 
 require_once __DIR__ . '/../../bootstrap.php';

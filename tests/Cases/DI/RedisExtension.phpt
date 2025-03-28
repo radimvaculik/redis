@@ -5,25 +5,38 @@ namespace Tests\Cases\DI;
 use Contributte\Redis\Caching\RedisJournal;
 use Contributte\Redis\Caching\RedisStorage;
 use Contributte\Redis\DI\RedisExtension;
+use Contributte\Tester\Toolkit;
+use Contributte\Tester\Utils\ContainerBuilder;
+use Contributte\Tester\Utils\Liberator;
+use Contributte\Tester\Utils\Neonkit;
 use Nette\Bridges\CacheDI\CacheExtension;
 use Nette\Caching\IStorage;
 use Nette\DI\Compiler;
-use Ninjify\Nunjuck\Toolkit;
 use Predis\Client;
 use Tester\Assert;
 use Tests\Fixtures\DummyRedisClient;
-use Tests\Toolkit\Container;
-use Tests\Toolkit\Helpers;
-use Tests\Toolkit\Liberator;
 use Tests\Toolkit\Tests;
 
 require_once __DIR__ . '/../../bootstrap.php';
 
 // Connection
 Toolkit::test(function (): void {
-	$container = Container::of()
-		->withDefaults()
-		->build();
+	$container = ContainerBuilder::of()
+		->withCompiler(function (Compiler $compiler): void {
+			$compiler->addExtension('redis', new RedisExtension());
+			$compiler->addConfig([
+				'parameters' => [
+					'tempDir' => Tests::TEMP_PATH,
+					'appDir' => Tests::APP_PATH,
+				],
+			]);
+			$compiler->addConfig(Neonkit::load('
+				redis:
+					connection:
+						default:
+							uri: tcp://127.0.0.1:6379
+			'));
+		})->build();
 
 	Assert::type(Client::class, $container->getService('redis.connection.default.client'));
 	Assert::falsey($container->hasService('redis.connection.default.journal'));
@@ -32,11 +45,11 @@ Toolkit::test(function (): void {
 
 // Client + Storage + Journal
 Toolkit::test(function (): void {
-	$container = Container::of()
+	$container = ContainerBuilder::of()
 		->withCompiler(function (Compiler $compiler): void {
 			$compiler->addExtension('redis', new RedisExtension());
 			$compiler->addExtension('caching', new CacheExtension(Tests::TEMP_PATH));
-			$compiler->addConfig(Helpers::neon('
+			$compiler->addConfig(Neonkit::load('
 				redis:
 					connection:
 						default:
@@ -53,11 +66,11 @@ Toolkit::test(function (): void {
 
 // Client + Storage + Journal
 Toolkit::test(function (): void {
-	$container = Container::of()
+	$container = ContainerBuilder::of()
 		->withCompiler(function (Compiler $compiler): void {
 			$compiler->addExtension('redis', new RedisExtension());
 			$compiler->addExtension('caching', new CacheExtension(Tests::TEMP_PATH));
-			$compiler->addConfig(Helpers::neon('
+			$compiler->addConfig(Neonkit::load('
 				redis:
 					connection:
 						default:
@@ -74,11 +87,11 @@ Toolkit::test(function (): void {
 
 // Multiple connections
 Toolkit::test(function (): void {
-	$container = Container::of()
+	$container = ContainerBuilder::of()
 		->withCompiler(function (Compiler $compiler): void {
 			$compiler->addExtension('redis', new RedisExtension());
 			$compiler->addExtension('caching', new CacheExtension(Tests::TEMP_PATH));
-			$compiler->addConfig(Helpers::neon('
+			$compiler->addConfig(Neonkit::load('
 				redis:
 					connection:
 						default:
@@ -100,11 +113,11 @@ Toolkit::test(function (): void {
 
 // Client + Storage + Journal
 Toolkit::test(function (): void {
-	$container = Container::of()
+	$container = ContainerBuilder::of()
 		->withCompiler(function (Compiler $compiler): void {
 			$compiler->addExtension('redis', new RedisExtension());
 			$compiler->addExtension('caching', new CacheExtension(Tests::TEMP_PATH));
-			$compiler->addConfig(Helpers::neon('
+			$compiler->addConfig(Neonkit::load('
 				redis:
 					connection:
 						default:
@@ -117,7 +130,7 @@ Toolkit::test(function (): void {
 		})
 		->build();
 
-	Assert::noError(function () use ($container) {
+	Assert::noError(function () use ($container): void {
 		$container->getByType(IStorage::class);
 	});
 
@@ -140,22 +153,21 @@ Toolkit::test(function (): void {
 
 // Dynamic parameters
 Toolkit::test(function (): void {
-	$container = Container::of()
+	$container = ContainerBuilder::of()
 		->withCompiler(function (Compiler $compiler): void {
 			$compiler->addExtension('redis', new RedisExtension());
-			$compiler->addConfig(Helpers::neon('
+			$compiler->addConfig(Neonkit::load('
 				redis:
 					connection:
 						default:
 							uri: %env.REDIS_URI%
 			'));
 		})
-		->withDynamicParameters([
+		->buildWith([
 			'env' => [
 				'REDIS_URI' => 'tcp://1.2.3.4:1234',
 			],
-		])
-		->build();
+		]);
 
 	/** @var Client $client */
 	$client = $container->getService('redis.connection.default.client');
@@ -168,11 +180,11 @@ Toolkit::test(function (): void {
 
 // Client factory
 Toolkit::test(function (): void {
-	$container = Container::of()
+	$container = ContainerBuilder::of()
 		->withCompiler(function (Compiler $compiler): void {
 			$compiler->addExtension('redis', new RedisExtension());
 			$compiler->addExtension('caching', new CacheExtension(Tests::TEMP_PATH));
-			$compiler->addConfig(Helpers::neon('
+			$compiler->addConfig(Neonkit::load('
 				redis:
 					clientFactory: Tests\Fixtures\DummyRedisClient
 					connection:
