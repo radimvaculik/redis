@@ -156,11 +156,7 @@ final class RedisExtension24 extends CompilerExtension
 			}
 
 			// Validate session config
-			if ($connection['sessions'] === true) {
-				$sessionConfig = $this->sessionDefaults;
-			} else {
-				$sessionConfig = $this->validateConfig($this->sessionDefaults, $connection['sessions'], $this->prefix('connection.' . $name . 'sessions'));
-			}
+			$sessionConfig = $connection['sessions'] === true ? $this->sessionDefaults : $this->validateConfig($this->sessionDefaults, $connection['sessions'], $this->prefix('connection.' . $name . 'sessions'));
 
 			$sessionHandler = $builder->addDefinition($this->prefix('connection.' . $name . 'sessionHandler'))
 				->setType(Handler::class)

@@ -5,8 +5,8 @@ namespace Contributte\Redis\Caching;
 use Contributte\Redis\Serializer\DefaultSerializer;
 use Contributte\Redis\Serializer\Serializer;
 use Nette\Caching\Cache;
-use Nette\Caching\IStorage as Storage;
-use Nette\Caching\Storages\IJournal as Journal;
+use Nette\Caching\Storage;
+use Nette\Caching\Storages\Journal;
 use Nette\InvalidStateException;
 use Predis\ClientInterface;
 use Predis\PredisException;
@@ -21,32 +21,35 @@ final class RedisStorage implements Storage
 	public const NS_PREFIX = 'Contributte.Storage';
 	private const NS_SEPARATOR = "\x00";
 
-	private const META_TIME = 'time'; // timestamp
-	private const META_EXPIRE = 'expire'; // expiration timestamp
-	private const META_DELTA = 'delta'; // relative (sliding) expiration
-	private const META_ITEMS = 'di'; // array of dependent items (file => timestamp)
-	private const META_CALLBACKS = 'callbacks'; // array of callbacks (function, args)
-	private const KEY = 'key'; // additional cache structure
+	// timestamp
+	private const META_TIME = 'time';
 
-	/** @var ClientInterface $client */
-	private $client;
+	// expiration timestamp
+	private const META_EXPIRE = 'expire';
 
-	/** @var Journal|null $journal */
-	private $journal;
+	// relative (sliding) expiration
+	private const META_DELTA = 'delta';
 
-	/** @var Serializer */
-	private $serializer;
+	// array of dependent items (file => timestamp)
+	private const META_ITEMS = 'di';
 
-	/**
-	 * @param ClientInterface $client
-	 * @param Journal|null $journal
-	 * @param Serializer|null $serializer
-	 */
+	// array of callbacks (function, args)
+	private const META_CALLBACKS = 'callbacks';
+
+	// additional cache structure
+	private const KEY = 'key';
+
+	private ClientInterface $client;
+
+	private Journal|null $journal;
+
+	private Serializer $serializer;
+
 	public function __construct(ClientInterface $client, ?Journal $journal = null, ?Serializer $serializer = null)
 	{
 		$this->client = $client;
 		$this->journal = $journal;
-		$this->serializer = $serializer ?: new DefaultSerializer();
+		$this->serializer = $serializer ?? new DefaultSerializer();
 	}
 
 	public function setSerializer(Serializer $serializer): void
@@ -61,14 +64,12 @@ final class RedisStorage implements Storage
 
 	/**
 	 * Read from cache.
-	 *
-	 * @param string $key
-	 * @return mixed|null
 	 */
-	public function read($key)
+	public function read(string $key): mixed
 	{
 		$stored = $this->doRead($key);
-		if (!$stored || !$this->verify($stored[0])) {
+
+		if ($stored === null || !$this->verify($stored[0])) {
 			return null;
 		}
 
@@ -77,10 +78,8 @@ final class RedisStorage implements Storage
 
 	/**
 	 * Removes item from the cache.
-	 *
-	 * @param string $key
 	 */
-	public function remove($key): void
+	public function remove(string $key): void
 	{
 		$this->client->del([$this->formatEntryKey($key)]);
 
@@ -108,11 +107,7 @@ final class RedisStorage implements Storage
 		return $values;
 	}
 
-
-	/**
-	 * @param string $key
-	 */
-	public function lock($key): void
+	public function lock(string $key): void
 	{
 		// unsupported now
 	}
@@ -120,40 +115,38 @@ final class RedisStorage implements Storage
 	/**
 	 * Writes item into the cache.
 	 *
-	 * @param string $key
-	 * @param mixed $data
 	 * @param mixed[] $dependencies
 	 */
-	public function write($key, $data, array $dependencies): void
+	public function write(string $key, mixed $data, array $dependencies): void
 	{
 		$meta = [
 			self::META_TIME => microtime(),
 		];
 
-		if (isset($dependencies[Cache::EXPIRATION])) {
-			if (empty($dependencies[Cache::SLIDING])) {
-				$meta[self::META_EXPIRE] = $dependencies[Cache::EXPIRATION] + time(); // absolute time
+		if (isset($dependencies[Cache::Expire])) {
+			if (!isset($dependencies[Cache::Sliding])) {
+				$meta[self::META_EXPIRE] = $dependencies[Cache::Expire] + time(); // absolute time
 
 			} else {
-				$meta[self::META_DELTA] = (int) $dependencies[Cache::EXPIRATION]; // sliding time
+				$meta[self::META_DELTA] = (int) $dependencies[Cache::Expire]; // sliding time
 			}
 		}
 
-		if (isset($dependencies[Cache::ITEMS])) {
-			foreach ((array) $dependencies[Cache::ITEMS] as $itemName) {
+		if (isset($dependencies[Cache::Items])) {
+			foreach ((array) $dependencies[Cache::Items] as $itemName) {
 				$m = $this->readMeta($itemName);
 				$meta[self::META_ITEMS][$itemName] = $m[self::META_TIME] ?? null; // may be null
 				unset($m);
 			}
 		}
 
-		if (isset($dependencies[Cache::CALLBACKS])) {
-			$meta[self::META_CALLBACKS] = $dependencies[Cache::CALLBACKS];
+		if (isset($dependencies[Cache::Callbacks])) {
+			$meta[self::META_CALLBACKS] = $dependencies[Cache::Callbacks];
 		}
 
 		$cacheKey = $this->formatEntryKey($key);
 
-		if (isset($dependencies[Cache::TAGS]) || isset($dependencies[Cache::PRIORITY])) {
+		if (isset($dependencies[Cache::Tags]) || isset($dependencies[Cache::Priority])) {
 			if ($this->journal === null) {
 				throw new InvalidStateException('CacheJournal has not been provided.');
 			}
@@ -165,8 +158,8 @@ final class RedisStorage implements Storage
 		$store = json_encode($meta) . self::NS_SEPARATOR . $data;
 
 		try {
-			if (isset($dependencies[Cache::EXPIRATION])) {
-				$this->client->setex($cacheKey, $dependencies[Cache::EXPIRATION], $store);
+			if (isset($dependencies[Cache::Expire])) {
+				$this->client->setex($cacheKey, (int) $dependencies[Cache::Expire], $store);
 
 			} else {
 				$this->client->set($cacheKey, $store);
@@ -176,6 +169,7 @@ final class RedisStorage implements Storage
 
 		} catch (PredisException $e) {
 			$this->remove($key);
+
 			throw new InvalidStateException($e->getMessage(), $e->getCode(), $e);
 		}
 	}
@@ -196,18 +190,43 @@ final class RedisStorage implements Storage
 	public function clean(array $conditions): void
 	{
 		// cleaning using file iterator
-		if (!empty($conditions[Cache::ALL])) {
+		if (isset($conditions[Cache::All])) {
 			$this->client->flushdb();
+
 			return;
 		}
 
 		// cleaning using journal
-		if ($this->journal) {
+		if ($this->journal !== null) {
 			$keys = $this->journal->clean($conditions);
-			if ($keys) {
+			if ($keys !== null) {
 				$this->client->del($keys);
 			}
 		}
+	}
+
+	/**
+	 * @return mixed[]|null
+	 */
+	protected function readMeta(string $key): ?array
+	{
+		$stored = $this->doRead($key);
+
+		if ($stored === null) {
+			return null;
+		}
+
+		return $stored[0];
+	}
+
+	/**
+	 * @return mixed[]
+	 */
+	private static function processStoredValue(string $key, string $storedValue): array
+	{
+		[$meta, $data] = explode(self::NS_SEPARATOR, $storedValue, 2) + [null, null];
+
+		return [[self::KEY => $key] + json_decode($meta, true), $data];
 	}
 
 	private function formatEntryKey(string $key): string
@@ -215,20 +234,18 @@ final class RedisStorage implements Storage
 		return self::NS_PREFIX . ':' . str_replace(self::NS_SEPARATOR, ':', $key);
 	}
 
-
 	/**
 	 * Verifies dependencies.
 	 *
 	 * @param mixed[] $meta
-	 * @return bool
 	 */
 	private function verify(array $meta): bool
 	{
 		do {
-			if (!empty($meta[self::META_DELTA])) {
-				$this->client->expire($this->formatEntryKey($meta[self::KEY]), $meta[self::META_DELTA]);
+			if (isset($meta[self::META_DELTA]) && $meta[self::META_DELTA] !== '') {
+				$this->client->expire($this->formatEntryKey($meta[self::KEY]), (int) $meta[self::META_DELTA]);
 
-			} elseif (!empty($meta[self::META_EXPIRE]) && $meta[self::META_EXPIRE] < time()) {
+			} elseif (isset($meta[self::META_EXPIRE]) && $meta[self::META_EXPIRE] < time()) {
 				break;
 			}
 
@@ -250,35 +267,19 @@ final class RedisStorage implements Storage
 		} while (false);
 
 		$this->remove($meta[self::KEY]); // meta[handle] & meta[file] was added by readMetaAndLock()
+
 		return false;
 	}
 
 	/**
-	 * @param string $key
-	 * @return mixed[]|null
-	 */
-	protected function readMeta(string $key): ?array
-	{
-		$stored = $this->doRead($key);
-
-		if (!$stored) {
-			return null;
-		}
-
-		return $stored[0];
-	}
-
-	/**
 	 * @param mixed[] $stored
-	 * @return mixed
 	 */
-	private function getUnserializedValue(array $stored)
+	private function getUnserializedValue(array $stored): mixed
 	{
 		return $this->serializer->unserialize($stored[1], $stored[0]);
 	}
 
 	/**
-	 * @param string $key
 	 * @return mixed[]|null
 	 */
 	private function doRead(string $key): ?array
@@ -310,17 +311,6 @@ final class RedisStorage implements Storage
 		}
 
 		return $result;
-	}
-
-	/**
-	 * @param string $key
-	 * @param string $storedValue
-	 * @return mixed[]
-	 */
-	private static function processStoredValue(string $key, string $storedValue): array
-	{
-		[$meta, $data] = explode(self::NS_SEPARATOR, $storedValue, 2) + [null, null];
-		return [[self::KEY => $key] + json_decode((string) $meta, true), $data];
 	}
 
 }

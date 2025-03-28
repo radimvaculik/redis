@@ -2,17 +2,18 @@
 
 namespace Contributte\Redis\Tracy;
 
+use Predis\ClientInterface;
 use Throwable;
 use Tracy\IBarPanel;
 
 final class RedisPanel implements IBarPanel
 {
 
-	/** @var mixed[] */
+	/** @var array<array{name: string, client: ClientInterface, uri: string|array<string>, options: array<mixed>}> */
 	private $connections;
 
 	/**
-	 * @param mixed[] $connections
+	 * @param array<array{name: string, client: ClientInterface, uri: string|array<string>, options: array<mixed>}> $connections
 	 */
 	public function __construct(array $connections)
 	{

@@ -6,19 +6,19 @@ final class SnappySerializer implements Serializer
 {
 
 	/**
-	 * {@inheritDoc}
+	 * @param mixed[] $meta
 	 */
-	public function serialize($data, array &$meta): string
+	public function serialize(mixed $data, array &$meta): string
 	{
-		return @snappy_compress(json_encode($data)); // @phpstan-ignore-line
+		return (string) snappy_compress(serialize($data));
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * @param mixed[] $meta
 	 */
-	public function unserialize(string $data, array $meta)
+	public function unserialize(string $data, array $meta): mixed
 	{
-		return json_decode(@snappy_uncompress($data)); // @phpstan-ignore-line
+		return unserialize((string) snappy_uncompress($data));
 	}
 
 }

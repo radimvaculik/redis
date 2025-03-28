@@ -3,7 +3,7 @@
 namespace Contributte\Redis\Caching;
 
 use Nette\Caching\Cache;
-use Nette\Caching\Storages\IJournal as Journal;
+use Nette\Caching\Storages\Journal;
 use Predis\ClientInterface;
 
 /**
@@ -29,25 +29,23 @@ final class RedisJournal implements Journal
 	/**
 	 * Writes entry information into the journal.
 	 *
-	 * @param string $key
-	 * @param mixed[] $dependencies
-	 * @return void
+	 * @param array{tags: string[], priority: int} $dependencies
 	 */
-	public function write($key, array $dependencies): void
+	public function write(string $key, array $dependencies): void
 	{
 		$this->cleanEntry($key);
 
 		$this->client->multi();
 
 		// add entry to each tag & tag to entry
-		$tags = empty($dependencies[Cache::TAGS]) ? [] : (array) $dependencies[Cache::TAGS];
+		$tags = !isset($dependencies[Cache::Tags]) ? [] : (array) $dependencies[Cache::Tags];
 		foreach (array_unique($tags) as $tag) {
 			$this->client->sadd($this->formatKey($tag, self::SUFFIX_KEYS), [$key]);
 			$this->client->sadd($this->formatKey($key, self::SUFFIX_TAGS), [$tag]);
 		}
 
-		if (isset($dependencies[Cache::PRIORITY])) {
-			$this->client->zadd($this->formatKey(self::KEY_PRIORITY), [$key => $dependencies[Cache::PRIORITY]]);
+		if (isset($dependencies[Cache::Priority])) {
+			$this->client->zadd($this->formatKey(self::KEY_PRIORITY), [$key => (int) $dependencies[Cache::Priority]]);
 		}
 
 		$this->client->exec();
@@ -58,19 +56,19 @@ final class RedisJournal implements Journal
 	 *
 	 * @param mixed[]|string $keys
 	 */
-	public function cleanEntry($keys): void
+	public function cleanEntry(array|string $keys): void
 	{
 		foreach (is_array($keys) ? $keys : [$keys] as $key) {
-			$entries = $this->entryTags($key);
+			$entries = $this->entryTags((string) $key);
 
 			$this->client->multi();
 			foreach ($entries as $tag) {
-				$this->client->srem($this->formatKey($tag, self::SUFFIX_KEYS), $key);
+				$this->client->srem($this->formatKey((string) $tag, self::SUFFIX_KEYS), (string) $key);
 			}
 
 			// drop tags of entry and priority, in case there are some
-			$this->client->del($this->formatKey($key, self::SUFFIX_TAGS));
-			$this->client->zrem($this->formatKey(self::KEY_PRIORITY), $key);
+			$this->client->del($this->formatKey((string) $key, self::SUFFIX_TAGS));
+			$this->client->zrem($this->formatKey(self::KEY_PRIORITY), (string) $key);
 
 			$this->client->exec();
 		}
@@ -84,27 +82,28 @@ final class RedisJournal implements Journal
 	 */
 	public function clean(array $conditions): ?array
 	{
-		if (!empty($conditions[Cache::ALL])) {
+		if (isset($conditions[Cache::All])) {
 			$all = $this->client->keys(self::NS_PREFIX . ':*');
 
 			$this->client->multi();
 			call_user_func_array([$this->client, 'del'], $all);
 			$this->client->exec();
+
 			return null;
 		}
 
 		$entries = [];
-		if (!empty($conditions[Cache::TAGS])) {
-			foreach ((array) $conditions[Cache::TAGS] as $tag) {
-				$this->cleanEntry($found = $this->tagEntries($tag));
+		if (isset($conditions[Cache::Tags])) {
+			foreach ((array) $conditions[Cache::Tags] as $tag) {
+				$this->cleanEntry($found = $this->tagEntries((string) $tag));
 				$entries[] = $found;
 			}
 
 			$entries = array_merge(...$entries);
 		}
 
-		if (isset($conditions[Cache::PRIORITY])) {
-			$this->cleanEntry($found = $this->priorityEntries($conditions[Cache::PRIORITY]));
+		if (isset($conditions[Cache::Priority])) {
+			$this->cleanEntry($found = $this->priorityEntries($conditions[Cache::Priority]));
 			$entries = array_merge($entries, $found);
 		}
 
@@ -112,35 +111,38 @@ final class RedisJournal implements Journal
 	}
 
 	/**
-	 * @param int $priority
 	 * @return mixed[]
 	 */
 	private function priorityEntries(int $priority): array
 	{
-		return $this->client->zrangebyscore($this->formatKey(self::KEY_PRIORITY), 0, $priority) ?: [];
+		$result = $this->client->zrangebyscore($this->formatKey(self::KEY_PRIORITY), 0, $priority);
+
+		return $result !== null ? (array) $result : [];
 	}
 
 	/**
-	 * @param string $key
 	 * @return mixed[]
 	 */
 	private function entryTags(string $key): array
 	{
-		return $this->client->smembers($this->formatKey($key, self::SUFFIX_TAGS)) ?: [];
+		$result = $this->client->smembers($this->formatKey($key, self::SUFFIX_TAGS));
+
+		return $result !== null ? (array) $result : [];
 	}
 
 	/**
-	 * @param string $tag
 	 * @return mixed[]
 	 */
 	private function tagEntries(string $tag): array
 	{
-		return $this->client->smembers($this->formatKey($tag, self::SUFFIX_KEYS)) ?: [];
+		$result = $this->client->smembers($this->formatKey($tag, self::SUFFIX_KEYS));
+
+		return $result !== null ? (array) $result : [];
 	}
 
 	private function formatKey(string $key, ?string $suffix = null): string
 	{
-		return self::NS_PREFIX . ':' . $key . ($suffix ? ':' . $suffix : null);
+		return self::NS_PREFIX . ':' . $key . ($suffix !== null ? ':' . $suffix : '');
 	}
 
 }

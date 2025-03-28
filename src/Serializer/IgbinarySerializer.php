@@ -6,19 +6,19 @@ final class IgbinarySerializer implements Serializer
 {
 
 	/**
-	 * {@inheritDoc}
+	 * @param mixed[] $meta
 	 */
-	public function serialize($data, array &$meta): string
+	public function serialize(mixed $data, array &$meta): string
 	{
-		return (string) @igbinary_serialize($data);
+		return (string) igbinary_serialize($data);
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * @param mixed[] $meta
 	 */
-	public function unserialize(string $data, array $meta)
+	public function unserialize(string $data, array $meta): mixed
 	{
-		return @igbinary_unserialize($data);
+		return igbinary_unserialize($data);
 	}
 
 }

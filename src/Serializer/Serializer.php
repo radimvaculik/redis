@@ -6,15 +6,13 @@ interface Serializer
 {
 
 	/**
-	 * @param mixed $data
 	 * @param mixed[] $meta
 	 */
-	public function serialize($data, array &$meta): string;
+	public function serialize(mixed $data, array &$meta): string;
 
 	/**
 	 * @param mixed[] $meta
-	 * @return mixed
 	 */
-	public function unserialize(string $data, array $meta);
+	public function unserialize(string $data, array $meta): mixed;
 
 }
