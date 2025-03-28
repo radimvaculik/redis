@@ -18,7 +18,7 @@
   ],
   "require": {
     "ext-json": "*",
-    "php": ">=7.2",
+    "php": ">=8.2",
     "nette/di": "^3.2.4",
     "predis/predis": "^2.3.0"
   },
